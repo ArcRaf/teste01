@@ -23,6 +23,13 @@ body {
     radial-gradient(circle at top left, rgba(110, 231, 249, 0.22), transparent 30%),
     linear-gradient(135deg, #030712, var(--bg));
   color: var(--text);
+  transition: outline 180ms ease, filter 180ms ease;
+}
+
+body.drag-over {
+  outline: 3px dashed rgba(110, 231, 249, 0.8);
+  outline-offset: -16px;
+  filter: brightness(1.05);
 }
 
 button,
@@ -251,7 +258,13 @@ input {
   color: var(--muted);
 }
 
-#resetPreview {
+.preview-actions {
+  display: flex;
+  gap: 8px;
+}
+
+#resetPreview,
+#downloadPreview {
   border: 0;
   border-radius: 999px;
   padding: 9px 14px;
@@ -304,7 +317,7 @@ input {
   position: absolute;
   left: calc(50% + var(--offset-x, 0px));
   top: calc(50% + var(--offset-y, 0px));
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) scale(var(--scale, 1));
   max-width: 86%;
   max-height: 86%;
   width: auto;
@@ -315,13 +328,15 @@ input {
   touch-action: none;
   user-select: none;
   filter: drop-shadow(0 12px 26px rgba(0, 0, 0, 0.28));
+  transform-origin: center center;
+  will-change: transform;
 }
 
 .text-layer {
   position: absolute;
   left: calc(50% + var(--offset-x, 0px));
   top: calc(50% + var(--offset-y, 0px));
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) scale(var(--scale, 1));
   max-width: min(82%, 420px);
   text-align: center;
   white-space: pre-wrap;
@@ -335,6 +350,82 @@ input {
 
 .text-layer.dragging {
   cursor: grabbing;
+}
+
+.text-layer.selected,
+.media-layer img.selected {
+  outline: 2px solid var(--accent);
+  outline-offset: 6px;
+}
+
+.selection-toolbar {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  display: none;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 12px;
+  background: rgba(7, 17, 31, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  backdrop-filter: blur(12px);
+  z-index: 5;
+}
+
+.selection-toolbar.active {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.selection-toolbar button {
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.toolbar-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.toolbar-field input {
+  width: 120px;
+}
+
+.text-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.text-controls.hidden {
+  display: none;
+}
+
+.text-controls input[type="text"] {
+  min-width: 140px;
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
+.text-controls input[type="color"] {
+  width: 38px;
+  height: 34px;
+  padding: 0;
+  border-radius: 999px;
+  border: 0;
+  background: transparent;
 }
 
 .safe-area {

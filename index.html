@@ -32,7 +32,7 @@
           <label class="upload-box" for="mediaInput">
             <span>Arraste ou clique para enviar</span>
             <small>PNG, JPG, WEBP ou SVG</small>
-            <input id="mediaInput" type="file" accept="image/*,.svg" />
+            <input id="mediaInput" type="file" accept="image/*,.svg" multiple />
           </label>
 
           <div class="options">
@@ -163,7 +163,10 @@
               <h2 id="currentPresetTitle">Post de feed</h2>
               <p id="currentPresetMeta"></p>
             </div>
-            <button id="resetPreview" type="button">Limpar</button>
+            <div class="preview-actions">
+              <button id="downloadPreview" type="button">Baixar PNG</button>
+              <button id="resetPreview" type="button">Limpar</button>
+            </div>
           </div>
 
           <div class="canvas-frame">
@@ -172,6 +175,18 @@
               <div id="mediaLayer" class="media-layer"></div>
               <div id="textLayer" class="text-layer">Seu texto</div>
               <div class="safe-area"></div>
+              <div id="selectionToolbar" class="selection-toolbar">
+                <button id="bringFrontBtn" type="button">Trazer para frente</button>
+                <button id="sendBackBtn" type="button">Enviar para trás</button>
+                <label class="toolbar-field">
+                  <span>Tamanho</span>
+                  <input id="itemScale" type="range" min="30" max="180" value="100" />
+                </label>
+                <div id="textControls" class="text-controls hidden">
+                  <input id="overlayTextInput" type="text" value="Seu texto" />
+                  <input id="overlayTextColor" type="color" value="#ffffff" />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -183,6 +198,7 @@
       </main>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="script.js"></script>
   </body>
 </html>

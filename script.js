@@ -63,9 +63,22 @@ const textBackgroundColor = document.getElementById('textBackgroundColor');
 const textRadius = document.getElementById('textRadius');
 const textRadiusValue = document.getElementById('textRadiusValue');
 const textShadowEnabled = document.getElementById('textShadowEnabled');
+const selectionToolbar = document.getElementById('selectionToolbar');
+const bringFrontBtn = document.getElementById('bringFrontBtn');
+const sendBackBtn = document.getElementById('sendBackBtn');
+const itemScale = document.getElementById('itemScale');
+const textControls = document.getElementById('textControls');
+const overlayTextInput = document.getElementById('overlayTextInput');
+const overlayTextColor = document.getElementById('overlayTextColor');
+const downloadPreview = document.getElementById('downloadPreview');
 
 let selectedPreset = presets[0];
 let dragState = null;
+let selectedItem = null;
+
+function isAcceptedFile(file) {
+  return Boolean(file && (file.type.startsWith('image/') || file.name.toLowerCase().endsWith('.svg')));
+}
 
 function renderPresets() {
   presetList.innerHTML = presets
@@ -104,8 +117,18 @@ function clearMedia() {
   mediaInfo.textContent = 'Nenhuma mídia adicionada ainda. Envie uma imagem ou SVG para começar.';
 }
 
+function updateMediaInfo() {
+  const count = mediaLayer.querySelectorAll('img').length;
+  mediaInfo.textContent = count > 0
+    ? `${count} mídia(s) adicionada(s). Arraste cada item para ajustar a composição.`
+    : 'Nenhuma mídia adicionada ainda. Envie uma imagem ou SVG para começar.';
+}
+
 function updateTypography() {
-  textLayer.textContent = textContent.value || 'Seu texto';
+  if (!selectedItem || selectedItem === textLayer) {
+    textLayer.textContent = textContent.value || 'Seu texto';
+  }
+  textLayer.style.fontFamily = fontFamily.value;
   textLayer.style.fontFamily = fontFamily.value;
   textLayer.style.fontSize = `${fontSize.value}px`;
   textLayer.style.fontWeight = fontWeight.value;
@@ -126,12 +149,23 @@ function updateTypography() {
   textRadiusValue.textContent = `${textRadius.value}px`;
 }
 
+function selectItem(target) {
+  selectedItem = target;
+  document.querySelectorAll('.selected').forEach((element) => element.classList.remove('selected'));
+  target.classList.add('selected');
+  selectionToolbar.classList.add('active');
+  const isText = target === textLayer;
+  textControls.classList.toggle('hidden', !isText);
+  if (isText) {
+    overlayTextInput.value = textLayer.textContent;
+    overlayTextColor.value = textLayer.style.color || '#ffffff';
+  }
+  itemScale.value = String(Math.round((parseFloat(target.style.getPropertyValue('--scale')) || 1) * 100));
+}
+
 function startDragging(event) {
   const target = event.currentTarget;
-  const rect = canvas.getBoundingClientRect();
-  const targetRect = target.getBoundingClientRect();
-  const maxX = Math.max(0, rect.width / 2 - targetRect.width / 2);
-  const maxY = Math.max(0, rect.height / 2 - targetRect.height / 2);
+  selectItem(target);
 
   dragState = {
     target,
@@ -139,8 +173,6 @@ function startDragging(event) {
     startY: event.clientY,
     startOffsetX: parseFloat(target.style.getPropertyValue('--offset-x')) || 0,
     startOffsetY: parseFloat(target.style.getPropertyValue('--offset-y')) || 0,
-    maxX,
-    maxY
   };
 
   target.classList.add('dragging');
@@ -156,11 +188,8 @@ function onPointerMove(event) {
   const nextX = dragState.startOffsetX + deltaX;
   const nextY = dragState.startOffsetY + deltaY;
 
-  const clampedX = Math.max(-dragState.maxX, Math.min(dragState.maxX, nextX));
-  const clampedY = Math.max(-dragState.maxY, Math.min(dragState.maxY, nextY));
-
-  dragState.target.style.setProperty('--offset-x', `${clampedX}px`);
-  dragState.target.style.setProperty('--offset-y', `${clampedY}px`);
+  dragState.target.style.setProperty('--offset-x', `${nextX}px`);
+  dragState.target.style.setProperty('--offset-y', `${nextY}px`);
 }
 
 function stopDragging() {
@@ -171,8 +200,7 @@ function stopDragging() {
 }
 
 function handleFile(file) {
-  if (!file) {
-    clearMedia();
+  if (!isAcceptedFile(file)) {
     return;
   }
 
@@ -181,16 +209,22 @@ function handleFile(file) {
 
   reader.onload = (event) => {
     const dataUrl = event.target.result;
-    mediaLayer.innerHTML = '';
     const image = document.createElement('img');
     image.src = dataUrl;
-    image.alt = 'Mídia carregada';
+    image.alt = file.name;
     image.draggable = false;
     image.style.setProperty('--offset-x', '0px');
     image.style.setProperty('--offset-y', '0px');
+    image.style.setProperty('--scale', '1');
+    image.style.width = 'auto';
+    image.style.height = 'auto';
+    image.style.maxWidth = '86%';
+    image.style.maxHeight = '86%';
+    image.classList.toggle('svg-item', isSvg);
     image.addEventListener('pointerdown', startDragging);
     mediaLayer.appendChild(image);
-    mediaInfo.textContent = `${file.name} · ${Math.round(file.size / 1024)} KB · ${isSvg ? 'SVG' : 'imagem'}`;
+    updateMediaInfo();
+    mediaInfo.textContent = `${mediaInfo.textContent}\n${file.name} · ${Math.round(file.size / 1024)} KB · ${isSvg ? 'SVG' : 'imagem'}`;
   };
 
   reader.readAsDataURL(file);
@@ -205,8 +239,45 @@ presetsWrap.addEventListener('click', (event) => {
 });
 
 mediaInput.addEventListener('change', (event) => {
-  handleFile(event.target.files[0]);
+  const files = Array.from(event.target.files || []).filter(isAcceptedFile);
+  files.forEach(handleFile);
+  event.target.value = '';
 });
+
+function handleDragEnter(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  document.body.classList.add('drag-over');
+}
+
+function handleDragOver(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'copy';
+  }
+  document.body.classList.add('drag-over');
+}
+
+function handleDragLeave(event) {
+  if (event.target === document.body || event.target === document.documentElement) {
+    document.body.classList.remove('drag-over');
+  }
+}
+
+function handleDrop(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  document.body.classList.remove('drag-over');
+
+  const files = Array.from(event.dataTransfer?.files || []).filter(isAcceptedFile);
+  files.forEach(handleFile);
+}
+
+window.addEventListener('dragenter', handleDragEnter);
+window.addEventListener('dragover', handleDragOver);
+window.addEventListener('dragleave', handleDragLeave);
+window.addEventListener('drop', handleDrop);
 
 showGrid.addEventListener('change', toggleGrid);
 showSafeArea.addEventListener('change', toggleSafeArea);
@@ -242,6 +313,84 @@ window.addEventListener('pointermove', onPointerMove);
 window.addEventListener('pointerup', stopDragging);
 window.addEventListener('pointercancel', stopDragging);
 textLayer.addEventListener('pointerdown', startDragging);
+canvas.addEventListener('click', (event) => {
+  if (event.target === canvas) {
+    selectedItem = null;
+    document.querySelectorAll('.selected').forEach((element) => element.classList.remove('selected'));
+    selectionToolbar.classList.remove('active');
+  }
+});
+
+bringFrontBtn.addEventListener('click', () => {
+  if (!selectedItem) return;
+  selectedItem.parentElement.appendChild(selectedItem);
+});
+
+sendBackBtn.addEventListener('click', () => {
+  if (!selectedItem) return;
+  const parent = selectedItem.parentElement;
+  const firstChild = parent.firstElementChild;
+  if (firstChild && firstChild !== selectedItem) {
+    parent.insertBefore(selectedItem, firstChild);
+  }
+});
+
+itemScale.addEventListener('input', () => {
+  if (!selectedItem) return;
+  const value = Number(itemScale.value) / 100;
+  selectedItem.style.setProperty('--scale', value);
+});
+
+overlayTextInput.addEventListener('input', () => {
+  if (selectedItem === textLayer) {
+    textContent.value = overlayTextInput.value;
+    updateTypography();
+  }
+});
+
+overlayTextColor.addEventListener('input', () => {
+  if (selectedItem === textLayer) {
+    textColor.value = overlayTextColor.value;
+    updateTypography();
+  }
+});
+
+downloadPreview.addEventListener('click', async () => {
+  if (typeof window.html2canvas !== 'function') {
+    alert('Não foi possível carregar a exportação no momento.');
+    return;
+  }
+
+  const originalLabel = downloadPreview.textContent;
+  downloadPreview.disabled = true;
+  downloadPreview.textContent = 'Gerando...';
+
+  const wasActive = selectionToolbar.classList.contains('active');
+  selectionToolbar.classList.remove('active');
+
+  try {
+    const canvasImage = await window.html2canvas(canvas, {
+      backgroundColor: '#101426',
+      scale: 2,
+      useCORS: true,
+      logging: false
+    });
+
+    const link = document.createElement('a');
+    link.download = 'instagram-layout.png';
+    link.href = canvasImage.toDataURL('image/png');
+    link.click();
+  } catch (error) {
+    console.error(error);
+    alert('Não foi possível gerar a imagem.');
+  } finally {
+    if (wasActive) {
+      selectionToolbar.classList.add('active');
+    }
+    downloadPreview.disabled = false;
+    downloadPreview.textContent = originalLabel;
+  }
+});
 
 updatePresetView();
 toggleGrid();
