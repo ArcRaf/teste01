@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Instagram Layout Studio</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Design System</p>
+          <h1>Instagram Layout Studio</h1>
+          <p>
+            Crie posts, stories e Reels com dimensões prontas, guias visuais e
+            suporte para imagens e SVG.
+          </p>
+        </div>
+        <div class="hero-card">
+          <h2>Dimensões recomendadas</h2>
+          <ul id="presetList"></ul>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <section class="controls panel">
+          <h2>1. Escolha o formato</h2>
+          <div id="presets" class="preset-grid"></div>
+
+          <h2>2. Adicione mídia</h2>
+          <label class="upload-box" for="mediaInput">
+            <span>Arraste ou clique para enviar</span>
+            <small>PNG, JPG, WEBP ou SVG</small>
+            <input id="mediaInput" type="file" accept="image/*,.svg" />
+          </label>
+
+          <div class="options">
+            <label>
+              <input id="showGrid" type="checkbox" checked />
+              Mostrar grade
+            </label>
+            <label>
+              <input id="showSafeArea" type="checkbox" checked />
+              Mostrar área segura
+            </label>
+          </div>
+
+          <h2>3. Ajuste a tipografia</h2>
+          <label class="field">
+            <span>Texto</span>
+            <input id="textContent" type="text" value="Seu texto" />
+          </label>
+
+          <div class="field-grid">
+            <label class="field">
+              <span>Fonte</span>
+              <select id="fontFamily">
+                <option value="Inter, Segoe UI, sans-serif">Inter</option>
+                <option value="Arial, Helvetica, sans-serif">Arial</option>
+                <option value="Georgia, serif">Georgia</option>
+                <option value="'Courier New', monospace">Courier</option>
+                <option value="'Times New Roman', serif">Times New Roman</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Tamanho</span>
+              <input id="fontSize" type="range" min="16" max="80" value="36" />
+              <small id="fontSizeValue">36px</small>
+            </label>
+          </div>
+
+          <div class="field-grid">
+            <label class="field">
+              <span>Estilo</span>
+              <select id="fontWeight">
+                <option value="400">Regular</option>
+                <option value="700">Negrito</option>
+                <option value="900">Extra negrito</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Forma</span>
+              <select id="fontStyle">
+                <option value="normal">Normal</option>
+                <option value="italic">Itálico</option>
+              </select>
+            </label>
+          </div>
+
+          <label class="field">
+            <span>Decoração</span>
+            <select id="textDecoration">
+              <option value="none">Nenhuma</option>
+              <option value="underline">Sublinhado</option>
+              <option value="line-through">Riscado</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Cor</span>
+            <input id="textColor" type="color" value="#ffffff" />
+          </label>
+
+          <div class="field-grid">
+            <label class="field">
+              <span>Alinhamento</span>
+              <select id="textAlign">
+                <option value="center">Centro</option>
+                <option value="left">Esquerda</option>
+                <option value="right">Direita</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Espaçamento</span>
+              <input id="letterSpacing" type="range" min="-2" max="8" value="0" />
+              <small id="letterSpacingValue">0px</small>
+            </label>
+          </div>
+
+          <div class="field-grid">
+            <label class="field">
+              <span>Altura da linha</span>
+              <input id="lineHeight" type="range" min="0.8" max="2.2" step="0.1" value="1.15" />
+              <small id="lineHeightValue">1.15</small>
+            </label>
+            <label class="field">
+              <span>Padding</span>
+              <input id="textPadding" type="range" min="0" max="24" value="10" />
+              <small id="textPaddingValue">10px</small>
+            </label>
+          </div>
+
+          <div class="field-grid">
+            <label class="field checkbox-field">
+              <span>Fundo</span>
+              <input id="textBackgroundEnabled" type="checkbox" />
+            </label>
+            <label class="field">
+              <span>Cor do fundo</span>
+              <input id="textBackgroundColor" type="color" value="#111827" />
+            </label>
+          </div>
+
+          <div class="field-grid">
+            <label class="field">
+              <span>Arredondar</span>
+              <input id="textRadius" type="range" min="0" max="40" value="12" />
+              <small id="textRadiusValue">12px</small>
+            </label>
+            <label class="field checkbox-field">
+              <span>Sombra</span>
+              <input id="textShadowEnabled" type="checkbox" checked />
+            </label>
+          </div>
+
+          <div id="mediaInfo" class="media-info"></div>
+        </section>
+
+        <section class="preview panel">
+          <div class="preview-toolbar">
+            <div>
+              <h2 id="currentPresetTitle">Post de feed</h2>
+              <p id="currentPresetMeta"></p>
+            </div>
+            <button id="resetPreview" type="button">Limpar</button>
+          </div>
+
+          <div class="canvas-frame">
+            <div id="canvas" class="canvas">
+              <div id="patternLayer" class="pattern-layer"></div>
+              <div id="mediaLayer" class="media-layer"></div>
+              <div id="textLayer" class="text-layer">Seu texto</div>
+              <div class="safe-area"></div>
+            </div>
+          </div>
+
+          <div class="dimension-pill">
+            <span id="canvasSize">1080 × 1350 px</span>
+            <span id="canvasRatio">4:5</span>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
