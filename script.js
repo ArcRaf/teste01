@@ -71,21 +71,25 @@ const textControls = document.getElementById('textControls');
 const overlayTextInput = document.getElementById('overlayTextInput');
 const overlayTextColor = document.getElementById('overlayTextColor');
 const downloadPreview = document.getElementById('downloadPreview');
-const toggleMotionPanel = document.getElementById('toggleMotionPanel');
-const motionPanel = document.getElementById('motionPanel');
-const closeMotionPanel = document.getElementById('closeMotionPanel');
-const particleField = document.getElementById('particleField');
-const particleCountInput = document.getElementById('particleCount');
-const particleSpeedInput = document.getElementById('particleSpeed');
-const particleCountValue = document.getElementById('particleCountValue');
-const particleSpeedValue = document.getElementById('particleSpeedValue');
+const motionCanvas = document.getElementById('motionCanvas');
+const motionSlider = document.getElementById('motionSlider');
+const motionSpeedInput = document.getElementById('motionSpeed');
+const motionSpeedValue = document.getElementById('motionSpeedValue');
+const motionDirectionValue = document.getElementById('motionDirectionValue');
+const exportVideo = document.getElementById('exportVideo');
+const resetMotion = document.getElementById('resetMotion');
 
 let selectedPreset = presets[0];
 let dragState = null;
 let selectedItem = null;
-let particles = [];
-let particleAnimationFrame = null;
-let particleSpeed = Number(particleSpeedInput?.value || 56);
+let motionContext = null;
+let motionFrame = 0;
+let motionObjects = [];
+let motionDirection = 0;
+let motionSpeed = Number(motionSpeedInput?.value || 1.4);
+let motionRecording = false;
+let motionRecorder = null;
+let recordedChunks = [];
 
 function isAcceptedFile(file) {
   return Boolean(file && (file.type.startsWith('image/') || file.name.toLowerCase().endsWith('.svg')));
@@ -159,79 +163,167 @@ function updateTypography() {
   textRadiusValue.textContent = `${textRadius.value}px`;
 }
 
-function createParticles(amount) {
-  if (!particleField) return;
-  particles = [];
-  particleField.innerHTML = '<span class="motion-note">Movimento ativo</span>';
-  const bounds = particleField.getBoundingClientRect();
-
-  for (let i = 0; i < amount; i += 1) {
-    const particle = document.createElement('span');
-    particle.className = 'particle';
-    const size = Math.random() * 8 + 4;
-    const x = Math.random() * Math.max(1, bounds.width - size);
-    const y = Math.random() * Math.max(1, bounds.height - size);
-    const vx = (Math.random() * 2 - 1) * 0.5;
-    const vy = (Math.random() * 2 - 1) * 0.5;
-    particle.style.width = `${size}px`;
-    particle.style.height = `${size}px`;
-    particle.style.opacity = `${Math.random() * 0.5 + 0.4}`;
-    particle.style.transform = `translate(${x}px, ${y}px)`;
-    particleField.appendChild(particle);
-    particles.push({ node: particle, x, y, vx, vy, size });
-  }
+function initMotionCanvas() {
+  if (!motionCanvas) return;
+  motionContext = motionCanvas.getContext('2d');
+  motionCanvas.width = 960;
+  motionCanvas.height = 540;
+  motionDirection = 0;
+  motionSpeed = Number(motionSpeedInput?.value || 1.4);
+  motionObjects = Array.from({ length: 5 }, (_, index) => ({
+    x: 80 + index * 140,
+    y: 120 + (index % 3) * 100,
+    radius: 28 + (index % 3) * 6,
+    color: `hsla(${180 + index * 24}, 90%, 70%, 0.95)`,
+    vx: 0.8 + index * 0.1,
+    vy: 0.6 + (index % 2) * 0.2,
+    phase: index * 0.4,
+  }));
+  motionFrame = 0;
 }
 
-function animateParticles() {
-  if (!particleField) return;
-  const bounds = particleField.getBoundingClientRect();
-  const speedFactor = particleSpeed / 50;
+function drawMotionFrame() {
+  if (!motionContext) return;
+  const { width, height } = motionCanvas;
+  motionContext.clearRect(0, 0, width, height);
 
-  particles.forEach((particle) => {
-    particle.x += particle.vx * speedFactor;
-    particle.y += particle.vy * speedFactor;
+  const gradient = motionContext.createLinearGradient(0, 0, width, height);
+  gradient.addColorStop(0, '#0d1728');
+  gradient.addColorStop(0.5, '#102b4d');
+  gradient.addColorStop(1, '#081020');
+  motionContext.fillStyle = gradient;
+  motionContext.fillRect(0, 0, width, height);
 
-    if (particle.x < 0) {
-      particle.x = 0;
-      particle.vx *= -1;
-    }
-    if (particle.x > bounds.width - particle.size) {
-      particle.x = bounds.width - particle.size;
-      particle.vx *= -1;
-    }
-    if (particle.y < 0) {
-      particle.y = 0;
-      particle.vy *= -1;
-    }
-    if (particle.y > bounds.height - particle.size) {
-      particle.y = bounds.height - particle.size;
-      particle.vy *= -1;
-    }
+  motionObjects.forEach((item) => {
+    item.x += item.vx * motionSpeed * (motionDirection || 0.8);
+    item.y += Math.sin(motionFrame * 0.015 + item.phase) * 0.8;
+    if (item.x > width + item.radius) item.x = -item.radius;
+    if (item.x < -item.radius) item.x = width + item.radius;
+    const glow = motionContext.createRadialGradient(item.x, item.y, 0, item.x, item.y, item.radius * 2.2);
+    glow.addColorStop(0, item.color);
+    glow.addColorStop(0.5, 'rgba(255,255,255,0.04)');
+    glow.addColorStop(1, 'transparent');
+    motionContext.fillStyle = glow;
+    motionContext.fillRect(item.x - item.radius * 2.2, item.y - item.radius * 2.2, item.radius * 4.4, item.radius * 4.4);
 
-    particle.node.style.transform = `translate(${particle.x}px, ${particle.y}px)`;
+    motionContext.beginPath();
+    motionContext.arc(item.x, item.y, item.radius, 0, Math.PI * 2);
+    motionContext.fillStyle = item.color;
+    motionContext.fill();
+    motionContext.strokeStyle = 'rgba(255,255,255,0.24)';
+    motionContext.lineWidth = 2;
+    motionContext.stroke();
   });
 
-  particleAnimationFrame = requestAnimationFrame(animateParticles);
+  motionContext.font = '700 24px Inter, sans-serif';
+  motionContext.fillStyle = 'rgba(255,255,255,0.88)';
+  motionContext.fillText('Motion Studio', 28, 42);
+  motionContext.font = '500 14px Inter, sans-serif';
+  motionContext.fillStyle = 'rgba(255,255,255,0.65)';
+  motionContext.fillText('Arraste a barra < > para ajustar direção e intensidade', 28, 66);
+  motionFrame += 1;
 }
 
-function startParticleLoop() {
-  if (particleAnimationFrame) return;
-  particleAnimationFrame = requestAnimationFrame(animateParticles);
+function animateMotion() {
+  drawMotionFrame();
+  requestAnimationFrame(animateMotion);
 }
 
-function stopParticleLoop() {
-  if (particleAnimationFrame) {
-    cancelAnimationFrame(particleAnimationFrame);
-    particleAnimationFrame = null;
+function updateMotionSlider(value) {
+  if (!motionSlider) return;
+  const bounds = motionSlider.getBoundingClientRect();
+  const handle = motionSlider.querySelector('.motion-slider-handle');
+  const center = bounds.width / 2;
+  const position = center + (value * (bounds.width / 2 - 16));
+  if (handle) {
+    handle.style.left = `${position}px`;
+  }
+  motionDirection = value;
+  if (motionDirectionValue) {
+    motionDirectionValue.textContent = `${Math.round(value * 100)}%`;
   }
 }
 
-function updateParticleSettings() {
-  if (!particleCountInput || !particleSpeedInput) return;
-  particleCountValue.textContent = particleCountInput.value;
-  particleSpeedValue.textContent = particleSpeedInput.value;
-  particleSpeed = Number(particleSpeedInput.value);
-  createParticles(Number(particleCountInput.value));
+function pointerDragDirection(event) {
+  const bounds = motionSlider.getBoundingClientRect();
+  const x = Math.max(0, Math.min(event.clientX - bounds.left, bounds.width));
+  const normalized = (x / bounds.width) * 2 - 1;
+  updateMotionSlider(normalized);
+}
+
+function initMotionControls() {
+  if (motionSpeedInput && motionSpeedValue) {
+    motionSpeedValue.textContent = `${motionSpeedInput.value}x`;
+    motionSpeedInput.addEventListener('input', () => {
+      motionSpeed = Number(motionSpeedInput.value);
+      motionSpeedValue.textContent = `${motionSpeed.toFixed(1)}x`;
+    });
+  }
+
+  if (motionSlider) {
+    let dragging = false;
+    motionSlider.addEventListener('pointerdown', (event) => {
+      dragging = true;
+      motionSlider.setPointerCapture(event.pointerId);
+      pointerDragDirection(event);
+    });
+    motionSlider.addEventListener('pointermove', (event) => {
+      if (!dragging) return;
+      pointerDragDirection(event);
+    });
+    motionSlider.addEventListener('pointerup', () => { dragging = false; });
+    motionSlider.addEventListener('pointercancel', () => { dragging = false; });
+  }
+
+  if (exportVideo) {
+    exportVideo.addEventListener('click', async () => {
+      if (!motionCanvas || motionRecording) return;
+      if (typeof MediaRecorder === 'undefined') {
+        alert('Seu navegador não suporta exportação de vídeo.');
+        return;
+      }
+      const stream = motionCanvas.captureStream(30);
+      const options = { mimeType: 'video/webm;codecs=vp8' };
+      recordedChunks = [];
+      try {
+        motionRecorder = new MediaRecorder(stream, options);
+      } catch (err) {
+        alert('Não foi possível iniciar a gravação de vídeo.');
+        return;
+      }
+      motionRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) recordedChunks.push(event.data);
+      };
+      motionRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'motion-export.webm';
+        link.click();
+        URL.revokeObjectURL(url);
+        motionRecording = false;
+        exportVideo.textContent = 'Salvar como vídeo';
+      };
+      motionRecording = true;
+      exportVideo.textContent = 'Gravando...';
+      motionRecorder.start();
+      setTimeout(() => {
+        motionRecorder.stop();
+      }, 2200);
+    });
+  }
+
+  if (resetMotion) {
+    resetMotion.addEventListener('click', () => {
+      motionSpeed = Number(motionSpeedInput?.value || 1.4);
+      updateMotionSlider(0);
+      if (motionSpeedInput) {
+        motionSpeedInput.value = '1.4';
+        motionSpeedValue.textContent = '1.4x';
+      }
+    });
+  }
 }
 
 function selectItem(target) {
@@ -477,39 +569,12 @@ downloadPreview.addEventListener('click', async () => {
   }
 });
 
-if (toggleMotionPanel) {
-  toggleMotionPanel.addEventListener('click', () => {
-    const isOpen = motionPanel.classList.toggle('open');
-    motionPanel.setAttribute('aria-hidden', String(!isOpen));
-    toggleMotionPanel.setAttribute('aria-expanded', String(isOpen));
-    if (isOpen) {
-      updateParticleSettings();
-      startParticleLoop();
-    } else {
-      stopParticleLoop();
-    }
-  });
+if (motionCanvas) {
+  initMotionCanvas();
+  updateMotionSlider(0);
+  initMotionControls();
+  animateMotion();
 }
-
-if (closeMotionPanel) {
-  closeMotionPanel.addEventListener('click', () => {
-    toggleMotionPanel?.click();
-  });
-}
-
-if (particleCountInput) {
-  particleCountInput.addEventListener('input', updateParticleSettings);
-}
-
-if (particleSpeedInput) {
-  particleSpeedInput.addEventListener('input', updateParticleSettings);
-}
-
-window.addEventListener('resize', () => {
-  if (motionPanel.classList.contains('open')) {
-    createParticles(Number(particleCountInput.value));
-  }
-});
 
 updatePresetView();
 toggleGrid();

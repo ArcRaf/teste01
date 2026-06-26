@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Motion Studio</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <nav class="site-nav">
+        <a href="index.html" class="nav-link">Layout</a>
+        <a href="motion.html" class="nav-link active">Motion</a>
+      </nav>
+
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Motion Studio</p>
+          <h1>Editor de movimento</h1>
+          <p>Espaço separado para explorar animações, direções e exportar vídeo simples.</p>
+        </div>
+        <div class="hero-card">
+          <h2>Ferramentas de motion</h2>
+          <ul>
+            <li>Slider direcional arrastável</li>
+            <li>Controles de velocidade</li>
+            <li>Visual centralizado em canvas</li>
+            <li>Exportação para vídeo WebM</li>
+          </ul>
+        </div>
+      </header>
+
+      <main class="motion-shell">
+        <aside class="motion-panel">
+          <div class="motion-panel-header">
+            <p class="eyebrow">Controles</p>
+            <h2>Configuração de motion</h2>
+            <p>Use o painel da esquerda para ajustar o fluxo do movimento e salvar uma prévia do vídeo.</p>
+          </div>
+
+          <div class="motion-controls">
+            <div class="motion-section">
+              <span>Velocidade</span>
+              <input id="motionSpeed" type="range" min="0.5" max="3" step="0.1" value="1.4" />
+              <div class="motion-stats">
+                <span>Velocidade</span>
+                <strong id="motionSpeedValue">1.4x</strong>
+              </div>
+            </div>
+
+            <div class="motion-section">
+              <span>Direção</span>
+              <div id="motionSlider" class="motion-slider" role="slider" aria-valuemin="-100" aria-valuemax="100" aria-valuenow="0"></div>
+              <div class="motion-stats">
+                <span>Intensidade</span>
+                <strong id="motionDirectionValue">0%</strong>
+              </div>
+            </div>
+
+            <div class="motion-actions">
+              <button id="exportVideo" class="motion-action" type="button">Salvar como vídeo</button>
+              <button id="resetMotion" class="motion-action" type="button">Resetar motion</button>
+            </div>
+          </div>
+        </aside>
+
+        <section class="motion-viewer">
+          <div class="motion-canvas-wrapper">
+            <canvas id="motionCanvas"></canvas>
+          </div>
+          <div class="motion-viewer-footer">
+            <span>Visualização central</span>
+            <strong>Arraste o controle para ajustar</strong>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
