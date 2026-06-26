@@ -71,10 +71,21 @@ const textControls = document.getElementById('textControls');
 const overlayTextInput = document.getElementById('overlayTextInput');
 const overlayTextColor = document.getElementById('overlayTextColor');
 const downloadPreview = document.getElementById('downloadPreview');
+const toggleMotionPanel = document.getElementById('toggleMotionPanel');
+const motionPanel = document.getElementById('motionPanel');
+const closeMotionPanel = document.getElementById('closeMotionPanel');
+const particleField = document.getElementById('particleField');
+const particleCountInput = document.getElementById('particleCount');
+const particleSpeedInput = document.getElementById('particleSpeed');
+const particleCountValue = document.getElementById('particleCountValue');
+const particleSpeedValue = document.getElementById('particleSpeedValue');
 
 let selectedPreset = presets[0];
 let dragState = null;
 let selectedItem = null;
+let particles = [];
+let particleAnimationFrame = null;
+let particleSpeed = Number(particleSpeedInput?.value || 56);
 
 function isAcceptedFile(file) {
   return Boolean(file && (file.type.startsWith('image/') || file.name.toLowerCase().endsWith('.svg')));
@@ -129,7 +140,6 @@ function updateTypography() {
     textLayer.textContent = textContent.value || 'Seu texto';
   }
   textLayer.style.fontFamily = fontFamily.value;
-  textLayer.style.fontFamily = fontFamily.value;
   textLayer.style.fontSize = `${fontSize.value}px`;
   textLayer.style.fontWeight = fontWeight.value;
   textLayer.style.fontStyle = fontStyle.value;
@@ -147,6 +157,81 @@ function updateTypography() {
   lineHeightValue.textContent = lineHeight.value;
   textPaddingValue.textContent = `${textPadding.value}px`;
   textRadiusValue.textContent = `${textRadius.value}px`;
+}
+
+function createParticles(amount) {
+  if (!particleField) return;
+  particles = [];
+  particleField.innerHTML = '<span class="motion-note">Movimento ativo</span>';
+  const bounds = particleField.getBoundingClientRect();
+
+  for (let i = 0; i < amount; i += 1) {
+    const particle = document.createElement('span');
+    particle.className = 'particle';
+    const size = Math.random() * 8 + 4;
+    const x = Math.random() * Math.max(1, bounds.width - size);
+    const y = Math.random() * Math.max(1, bounds.height - size);
+    const vx = (Math.random() * 2 - 1) * 0.5;
+    const vy = (Math.random() * 2 - 1) * 0.5;
+    particle.style.width = `${size}px`;
+    particle.style.height = `${size}px`;
+    particle.style.opacity = `${Math.random() * 0.5 + 0.4}`;
+    particle.style.transform = `translate(${x}px, ${y}px)`;
+    particleField.appendChild(particle);
+    particles.push({ node: particle, x, y, vx, vy, size });
+  }
+}
+
+function animateParticles() {
+  if (!particleField) return;
+  const bounds = particleField.getBoundingClientRect();
+  const speedFactor = particleSpeed / 50;
+
+  particles.forEach((particle) => {
+    particle.x += particle.vx * speedFactor;
+    particle.y += particle.vy * speedFactor;
+
+    if (particle.x < 0) {
+      particle.x = 0;
+      particle.vx *= -1;
+    }
+    if (particle.x > bounds.width - particle.size) {
+      particle.x = bounds.width - particle.size;
+      particle.vx *= -1;
+    }
+    if (particle.y < 0) {
+      particle.y = 0;
+      particle.vy *= -1;
+    }
+    if (particle.y > bounds.height - particle.size) {
+      particle.y = bounds.height - particle.size;
+      particle.vy *= -1;
+    }
+
+    particle.node.style.transform = `translate(${particle.x}px, ${particle.y}px)`;
+  });
+
+  particleAnimationFrame = requestAnimationFrame(animateParticles);
+}
+
+function startParticleLoop() {
+  if (particleAnimationFrame) return;
+  particleAnimationFrame = requestAnimationFrame(animateParticles);
+}
+
+function stopParticleLoop() {
+  if (particleAnimationFrame) {
+    cancelAnimationFrame(particleAnimationFrame);
+    particleAnimationFrame = null;
+  }
+}
+
+function updateParticleSettings() {
+  if (!particleCountInput || !particleSpeedInput) return;
+  particleCountValue.textContent = particleCountInput.value;
+  particleSpeedValue.textContent = particleSpeedInput.value;
+  particleSpeed = Number(particleSpeedInput.value);
+  createParticles(Number(particleCountInput.value));
 }
 
 function selectItem(target) {
@@ -389,6 +474,40 @@ downloadPreview.addEventListener('click', async () => {
     }
     downloadPreview.disabled = false;
     downloadPreview.textContent = originalLabel;
+  }
+});
+
+if (toggleMotionPanel) {
+  toggleMotionPanel.addEventListener('click', () => {
+    const isOpen = motionPanel.classList.toggle('open');
+    motionPanel.setAttribute('aria-hidden', String(!isOpen));
+    toggleMotionPanel.setAttribute('aria-expanded', String(isOpen));
+    if (isOpen) {
+      updateParticleSettings();
+      startParticleLoop();
+    } else {
+      stopParticleLoop();
+    }
+  });
+}
+
+if (closeMotionPanel) {
+  closeMotionPanel.addEventListener('click', () => {
+    toggleMotionPanel?.click();
+  });
+}
+
+if (particleCountInput) {
+  particleCountInput.addEventListener('input', updateParticleSettings);
+}
+
+if (particleSpeedInput) {
+  particleSpeedInput.addEventListener('input', updateParticleSettings);
+}
+
+window.addEventListener('resize', () => {
+  if (motionPanel.classList.contains('open')) {
+    createParticles(Number(particleCountInput.value));
   }
 });
 

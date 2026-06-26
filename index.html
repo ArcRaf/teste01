@@ -196,6 +196,38 @@
           </div>
         </section>
       </main>
+
+      <button id="toggleMotionPanel" class="motion-toggle" type="button" aria-expanded="false">
+        Flutuações
+      </button>
+
+      <aside id="motionPanel" class="motion-panel" aria-hidden="true">
+        <div class="motion-panel-header">
+          <div>
+            <p class="eyebrow">Motion Lab</p>
+            <h2>Flutuações</h2>
+            <p>Partículas e movimento para demonstração e início de pesquisa visual.</p>
+          </div>
+          <button id="closeMotionPanel" class="motion-panel-close" type="button" aria-label="Fechar painel de flutuações">×</button>
+        </div>
+        <div class="motion-panel-body">
+          <div class="motion-controls">
+            <label>
+              <span>Quantidade</span>
+              <input id="particleCount" type="range" min="12" max="60" value="28" />
+              <small id="particleCountValue">28</small>
+            </label>
+            <label>
+              <span>Velocidade</span>
+              <input id="particleSpeed" type="range" min="20" max="120" value="56" />
+              <small id="particleSpeedValue">56</small>
+            </label>
+          </div>
+          <div id="particleField" class="particle-field" aria-label="Área de partículas">
+            <span class="motion-note">Movimento ativo</span>
+          </div>
+        </div>
+      </aside>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
