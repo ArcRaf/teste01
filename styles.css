@@ -104,13 +104,49 @@ input {
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(280px, 360px) 1fr;
-  gap: 24px;
+  grid-template-columns: minmax(280px, 320px) minmax(720px, 1fr);
+  gap: 20px;
 }
 
 .panel {
+  border-radius: 24px;
+  padding: 18px;
+}
+
+.canvas-frame {
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+}
+
+.canvas {
+  width: min(100%, 760px);
+  aspect-ratio: var(--canvas-ratio, 4 / 5);
   border-radius: 26px;
-  padding: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  overflow: hidden;
+  background: linear-gradient(135deg, #101426, #1d2743);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.canvas-frame {
+  display: grid;
+  place-items: center;
+  padding: 10px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+}
+
+.canvas {
+  width: min(100%, 760px);
+  aspect-ratio: var(--canvas-ratio, 4 / 5);
+  border-radius: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  overflow: hidden;
+  background: linear-gradient(135deg, #101426, #1d2743);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .controls h2,
@@ -201,6 +237,19 @@ input {
   color: var(--muted);
 }
 
+.range-control {
+  position: relative;
+}
+
+.range-control::after {
+  content: '↔';
+  position: absolute;
+  right: 14px;
+  top: 10px;
+  color: var(--accent);
+  font-size: 0.95rem;
+}
+
 .field span {
   color: var(--text);
   font-size: 0.94rem;
@@ -214,6 +263,49 @@ input {
   padding: 10px 12px;
   background: rgba(255, 255, 255, 0.04);
   color: var(--text);
+}
+
+.arrow-range {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+}
+
+.arrow-range:focus-visible {
+  outline: 2px solid rgba(110, 231, 249, 0.9);
+  outline-offset: 3px;
+}
+
+.arrow-label {
+  color: var(--accent);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.arrow-track {
+  position: relative;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+}
+
+.arrow-thumb {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 8px rgba(110, 231, 249, 0.12);
 }
 
 .checkbox-field {
@@ -363,6 +455,15 @@ input {
   gap: 22px;
 }
 
+.gui-container {
+  position: fixed;
+  right: 18px;
+  top: 100px;
+  z-index: 50;
+  min-width: 240px;
+  max-width: 320px;
+}
+
 .motion-panel {
   border-radius: 26px;
   padding: 22px;
@@ -392,13 +493,25 @@ input {
   gap: 16px;
 }
 
-.motion-controls label,
-.motion-section {
-  display: grid;
-  gap: 8px;
-  color: var(--muted);
-  font-size: 0.92rem;
-}
+  .motion-section {
+    display: grid;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+
+  .motion-section.range-control {
+    position: relative;
+  }
+
+  .motion-section.range-control::after {
+    content: '↔';
+    position: absolute;
+    right: 18px;
+    top: 16px;
+    color: var(--accent);
+    font-size: 1rem;
+  }
 
 .motion-controls input[type="range"] {
   width: 100%;
@@ -431,12 +544,13 @@ input {
   position: relative;
   display: grid;
   place-items: center;
-  height: 48px;
+  height: 56px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(110, 231, 249, 0.25);
   cursor: pointer;
   user-select: none;
+  overflow: hidden;
 }
 
 .motion-slider::before {
@@ -449,8 +563,8 @@ input {
 
 .motion-slider-track {
   position: absolute;
-  inset: 16px 12px;
-  height: 4px;
+  inset: 18px 12px;
+  height: 6px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.12);
 }
@@ -459,12 +573,49 @@ input {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: var(--accent);
   transform: translate(-50%, -50%);
-  box-shadow: 0 0 0 8px rgba(110, 231, 249, 0.14);
+  box-shadow: 0 0 0 10px rgba(110, 231, 249, 0.12);
+}
+
+.motion-joystick {
+  position: relative;
+  width: 100%;
+  max-width: 260px;
+  aspect-ratio: 1 / 1;
+  margin-top: 12px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(110, 231, 249, 0.18);
+  border-radius: 24px;
+  touch-action: none;
+}
+
+.motion-joystick-ring {
+  position: relative;
+  width: 72%;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  border: 2px solid rgba(110, 231, 249, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+  display: grid;
+  place-items: center;
+}
+
+.motion-joystick-handle {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 10px rgba(110, 231, 249, 0.14);
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
 }
 
 .motion-viewer {

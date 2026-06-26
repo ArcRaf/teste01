@@ -71,8 +71,11 @@ const textControls = document.getElementById('textControls');
 const overlayTextInput = document.getElementById('overlayTextInput');
 const overlayTextColor = document.getElementById('overlayTextColor');
 const downloadPreview = document.getElementById('downloadPreview');
+const scaleControl = document.getElementById('scaleControl');
+const scaleValue = document.getElementById('scaleValue');
 const motionCanvas = document.getElementById('motionCanvas');
 const motionSlider = document.getElementById('motionSlider');
+const motionJoystick = document.getElementById('motionJoystick');
 const motionSpeedInput = document.getElementById('motionSpeed');
 const motionSpeedValue = document.getElementById('motionSpeedValue');
 const motionDirectionValue = document.getElementById('motionDirectionValue');
@@ -163,6 +166,67 @@ function updateTypography() {
   textRadiusValue.textContent = `${textRadius.value}px`;
 }
 
+function updateScaleThumb(value) {
+  if (!scaleControl) return;
+  const track = scaleControl.querySelector('.arrow-track');
+  const thumb = scaleControl.querySelector('.arrow-thumb');
+  if (!track || !thumb) return;
+
+  const min = 30;
+  const max = 180;
+  const ratio = (value - min) / (max - min);
+  const trackWidth = track.getBoundingClientRect().width;
+  thumb.style.left = `${Math.max(0, Math.min(trackWidth, ratio * trackWidth))}px`;
+}
+
+function setScaleValue(value, applyToSelected = true) {
+  const normalized = Math.max(30, Math.min(180, Number(value)));
+
+  if (scaleControl) {
+    scaleControl.setAttribute('aria-valuenow', String(Math.round(normalized)));
+    scaleControl.setAttribute('aria-valuetext', `${Math.round(normalized)}%`);
+  }
+
+  if (scaleValue) {
+    scaleValue.textContent = `${Math.round(normalized)}%`;
+  }
+
+  updateScaleThumb(normalized);
+
+  if (applyToSelected && selectedItem) {
+    selectedItem.style.setProperty('--scale', String(normalized / 100));
+    if (itemScale) {
+      itemScale.value = String(Math.round(normalized));
+    }
+  }
+}
+
+function syncScaleControlWithSelection() {
+  let currentScale = 100;
+  if (selectedItem) {
+    currentScale = Number(selectedItem.style.getPropertyValue('--scale')) * 100;
+    if (Number.isNaN(currentScale) || currentScale <= 0) {
+      currentScale = 100;
+    }
+  }
+
+  setScaleValue(currentScale, false);
+  if (itemScale) {
+    itemScale.value = String(Math.round(currentScale));
+  }
+}
+
+function handleScalePointer(event) {
+  if (!scaleControl) return;
+  const track = scaleControl.querySelector('.arrow-track');
+  if (!track) return;
+
+  const bounds = track.getBoundingClientRect();
+  const x = Math.max(0, Math.min(event.clientX - bounds.left, bounds.width));
+  const percent = 30 + (x / bounds.width) * 150;
+  setScaleValue(percent, true);
+}
+
 function initMotionCanvas() {
   if (!motionCanvas) return;
   motionContext = motionCanvas.getContext('2d');
@@ -242,12 +306,32 @@ function updateMotionSlider(value) {
   if (motionDirectionValue) {
     motionDirectionValue.textContent = `${Math.round(value * 100)}%`;
   }
+  if (motionSlider) {
+    motionSlider.setAttribute('aria-valuenow', String(Math.round(value * 100)));
+  }
+  if (motionJoystick) {
+    const joystickHandle = motionJoystick.querySelector('.motion-joystick-handle');
+    if (joystickHandle) {
+      joystickHandle.style.left = `${50 + value * 40}%`;
+    }
+  }
 }
 
 function pointerDragDirection(event) {
+  if (!motionSlider) return;
   const bounds = motionSlider.getBoundingClientRect();
   const x = Math.max(0, Math.min(event.clientX - bounds.left, bounds.width));
   const normalized = (x / bounds.width) * 2 - 1;
+  updateMotionSlider(normalized);
+}
+
+function pointerDragJoystick(event) {
+  if (!motionJoystick) return;
+  const ring = motionJoystick.querySelector('.motion-joystick-ring');
+  if (!ring) return;
+  const bounds = ring.getBoundingClientRect();
+  const x = Math.max(bounds.left, Math.min(event.clientX, bounds.right));
+  const normalized = ((x - bounds.left) / bounds.width) * 2 - 1;
   updateMotionSlider(normalized);
 }
 
@@ -273,6 +357,21 @@ function initMotionControls() {
     });
     motionSlider.addEventListener('pointerup', () => { dragging = false; });
     motionSlider.addEventListener('pointercancel', () => { dragging = false; });
+  }
+
+  if (motionJoystick) {
+    let joystickDragging = false;
+    motionJoystick.addEventListener('pointerdown', (event) => {
+      joystickDragging = true;
+      motionJoystick.setPointerCapture(event.pointerId);
+      pointerDragJoystick(event);
+    });
+    motionJoystick.addEventListener('pointermove', (event) => {
+      if (!joystickDragging) return;
+      pointerDragJoystick(event);
+    });
+    motionJoystick.addEventListener('pointerup', () => { joystickDragging = false; });
+    motionJoystick.addEventListener('pointercancel', () => { joystickDragging = false; });
   }
 
   if (exportVideo) {
@@ -326,6 +425,44 @@ function initMotionControls() {
   }
 }
 
+function initMotionGui() {
+  if (typeof lil === 'undefined' || typeof lil.GUI !== 'function') return;
+  const guiContainer = document.getElementById('guiContainer');
+  if (!guiContainer) return;
+
+  const motionSettings = {
+    velocidade: motionSpeed,
+    direcao: motionDirection * 100,
+    reset: () => {
+      motionSpeed = 1.4;
+      if (motionSpeedInput) {
+        motionSpeedInput.value = '1.4';
+      }
+      if (motionSpeedValue) {
+        motionSpeedValue.textContent = '1.4x';
+      }
+      updateMotionSlider(0);
+    },
+    exportVideo: () => {
+      if (exportVideo) {
+        exportVideo.click();
+      }
+    }
+  };
+
+  const gui = new lil.GUI({ container: guiContainer, title: 'Controles' });
+  gui.add(motionSettings, 'velocidade', 0.5, 3, 0.1).name('Velocidade').onChange((value) => {
+    motionSpeed = value;
+    if (motionSpeedInput) motionSpeedInput.value = value.toFixed(1);
+    if (motionSpeedValue) motionSpeedValue.textContent = `${value.toFixed(1)}x`;
+  });
+  gui.add(motionSettings, 'direcao', -100, 100, 1).name('Direção').onChange((value) => {
+    updateMotionSlider(value / 100);
+  });
+  gui.add(motionSettings, 'reset').name('Resetar motion');
+  gui.add(motionSettings, 'exportVideo').name('Salvar vídeo');
+}
+
 function selectItem(target) {
   selectedItem = target;
   document.querySelectorAll('.selected').forEach((element) => element.classList.remove('selected'));
@@ -338,6 +475,7 @@ function selectItem(target) {
     overlayTextColor.value = textLayer.style.color || '#ffffff';
   }
   itemScale.value = String(Math.round((parseFloat(target.style.getPropertyValue('--scale')) || 1) * 100));
+  syncScaleControlWithSelection();
 }
 
 function startDragging(event) {
@@ -478,12 +616,8 @@ resetPreview.addEventListener('click', () => {
   textShadowEnabled.checked = true;
   textLayer.style.setProperty('--offset-x', '0px');
   textLayer.style.setProperty('--offset-y', '0px');
-  updateTypography();
-});
-
-[textContent, fontFamily, fontSize, fontWeight, fontStyle, textDecoration, textColor, textAlign, letterSpacing, lineHeight, textPadding, textBackgroundEnabled, textBackgroundColor, textRadius, textShadowEnabled].forEach((control) => {
-  control.addEventListener('input', updateTypography);
-  control.addEventListener('change', updateTypography);
+  itemScale.value = '100';
+  setScaleValue(100);
 });
 
 window.addEventListener('pointermove', onPointerMove);
@@ -495,12 +629,8 @@ canvas.addEventListener('click', (event) => {
     selectedItem = null;
     document.querySelectorAll('.selected').forEach((element) => element.classList.remove('selected'));
     selectionToolbar.classList.remove('active');
+    syncScaleControlWithSelection();
   }
-});
-
-bringFrontBtn.addEventListener('click', () => {
-  if (!selectedItem) return;
-  selectedItem.parentElement.appendChild(selectedItem);
 });
 
 sendBackBtn.addEventListener('click', () => {
@@ -516,6 +646,7 @@ itemScale.addEventListener('input', () => {
   if (!selectedItem) return;
   const value = Number(itemScale.value) / 100;
   selectedItem.style.setProperty('--scale', value);
+  setScaleValue(Number(itemScale.value), false);
 });
 
 overlayTextInput.addEventListener('input', () => {
@@ -573,7 +704,44 @@ if (motionCanvas) {
   initMotionCanvas();
   updateMotionSlider(0);
   initMotionControls();
+  initMotionGui();
   animateMotion();
+}
+
+if (scaleControl) {
+  let scaleDragging = false;
+  setScaleValue(100);
+
+  scaleControl.addEventListener('pointerdown', (event) => {
+    scaleDragging = true;
+    scaleControl.setPointerCapture(event.pointerId);
+    handleScalePointer(event);
+  });
+
+  scaleControl.addEventListener('pointermove', (event) => {
+    if (!scaleDragging) return;
+    handleScalePointer(event);
+  });
+
+  scaleControl.addEventListener('pointerup', () => {
+    scaleDragging = false;
+  });
+
+  scaleControl.addEventListener('pointercancel', () => {
+    scaleDragging = false;
+  });
+
+  scaleControl.addEventListener('keydown', (event) => {
+    const current = Number(scaleControl.getAttribute('aria-valuenow')) || 100;
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') {
+      event.preventDefault();
+      setScaleValue(Math.max(30, current - 5), true);
+    }
+    if (event.key === 'ArrowRight' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      setScaleValue(Math.min(180, current + 5), true);
+    }
+  });
 }
 
 updatePresetView();

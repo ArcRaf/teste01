@@ -39,7 +39,7 @@
           </div>
 
           <div class="motion-controls">
-            <div class="motion-section">
+            <div class="motion-section range-control">
               <span>Velocidade</span>
               <input id="motionSpeed" type="range" min="0.5" max="3" step="0.1" value="1.4" />
               <div class="motion-stats">
@@ -50,10 +50,22 @@
 
             <div class="motion-section">
               <span>Direção</span>
-              <div id="motionSlider" class="motion-slider" role="slider" aria-valuemin="-100" aria-valuemax="100" aria-valuenow="0"></div>
+              <div id="motionSlider" class="motion-slider" role="slider" aria-valuemin="-100" aria-valuemax="100" aria-valuenow="0">
+                <div class="motion-slider-track"></div>
+                <div class="motion-slider-handle"></div>
+              </div>
               <div class="motion-stats">
                 <span>Intensidade</span>
                 <strong id="motionDirectionValue">0%</strong>
+              </div>
+            </div>
+
+            <div class="motion-section">
+              <span>Joystick virtual</span>
+              <div id="motionJoystick" class="motion-joystick" role="application" aria-label="Joystick de direção">
+                <div class="motion-joystick-ring">
+                  <div class="motion-joystick-handle"></div>
+                </div>
               </div>
             </div>
 
@@ -74,8 +86,10 @@
           </div>
         </section>
       </main>
+      <div id="guiContainer" class="gui-container"></div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/lil-gui@0.18/dist/lil-gui.min.js"></script>
     <script src="script.js"></script>
   </body>
 </html>

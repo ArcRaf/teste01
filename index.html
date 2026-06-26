@@ -50,6 +50,18 @@
             </label>
           </div>
 
+          <div class="field">
+            <span>Escala interativa</span>
+            <div id="scaleControl" class="arrow-range" role="slider" tabindex="0" aria-valuemin="30" aria-valuemax="180" aria-valuenow="100">
+              <span class="arrow-label">&lt;</span>
+              <div class="arrow-track">
+                <span class="arrow-thumb"></span>
+              </div>
+              <span class="arrow-label">&gt;</span>
+            </div>
+            <small id="scaleValue">100%</small>
+          </div>
+
           <h2>3. Ajuste a tipografia</h2>
           <label class="field">
             <span>Texto</span>
@@ -67,7 +79,7 @@
                 <option value="'Times New Roman', serif">Times New Roman</option>
               </select>
             </label>
-            <label class="field">
+            <label class="field range-control">
               <span>Tamanho</span>
               <input id="fontSize" type="range" min="16" max="80" value="36" />
               <small id="fontSizeValue">36px</small>
@@ -115,7 +127,7 @@
                 <option value="right">Direita</option>
               </select>
             </label>
-            <label class="field">
+            <label class="field range-control">
               <span>Espaçamento</span>
               <input id="letterSpacing" type="range" min="-2" max="8" value="0" />
               <small id="letterSpacingValue">0px</small>
@@ -123,12 +135,12 @@
           </div>
 
           <div class="field-grid">
-            <label class="field">
+            <label class="field range-control">
               <span>Altura da linha</span>
               <input id="lineHeight" type="range" min="0.8" max="2.2" step="0.1" value="1.15" />
               <small id="lineHeightValue">1.15</small>
             </label>
-            <label class="field">
+            <label class="field range-control">
               <span>Padding</span>
               <input id="textPadding" type="range" min="0" max="24" value="10" />
               <small id="textPaddingValue">10px</small>
@@ -147,7 +159,7 @@
           </div>
 
           <div class="field-grid">
-            <label class="field">
+            <label class="field range-control">
               <span>Arredondar</span>
               <input id="textRadius" type="range" min="0" max="40" value="12" />
               <small id="textRadiusValue">12px</small>
@@ -182,7 +194,7 @@
               <div id="selectionToolbar" class="selection-toolbar">
                 <button id="bringFrontBtn" type="button">Trazer para frente</button>
                 <button id="sendBackBtn" type="button">Enviar para trás</button>
-                <label class="toolbar-field">
+                <label class="toolbar-field range-control">
                   <span>Tamanho</span>
                   <input id="itemScale" type="range" min="30" max="180" value="100" />
                 </label>
